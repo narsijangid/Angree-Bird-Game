@@ -1,906 +1,1346 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AssignmentAI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Google+Sans+Display:wght@400;500;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<title>Battle Royale — TPP Movement + Guns</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --bg:#ffffff;
-  --bg-page:#f8f9fa;
-  --bg-card:#ffffff;
-  --bg-hover:#f1f3f4;
-  --bg-active:#e8f0fe;
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #0a0a0a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    touch-action: none;
+    user-select: none;
+  }
+  #gameCanvas { display: block; width: 100%; height: 100%; }
 
-  --blue:#1a73e8;
-  --blue-light:#e8f0fe;
-  --blue-mid:#4285f4;
-  --green:#1e8e3e;
-  --green-light:#e6f4ea;
-  --red:#d93025;
-  --red-light:#fce8e6;
-  --yellow:#f9ab00;
-  --yellow-light:#fef7e0;
-  --purple:#9334e6;
-  --purple-light:#f3e8fd;
+  #hud {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
 
-  --text:#202124;
-  --text2:#5f6368;
-  --text3:#80868b;
-  --text-inv:#ffffff;
+  #topBar {
+    position: absolute; top: 10px; left: 12px; right: 12px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  #playerCount {
+    background: rgba(0,0,0,0.55);
+    color: #ffd45e; font-weight: 700; font-size: 17px;
+    padding: 6px 14px; border-radius: 6px;
+    border: 1px solid rgba(255,212,94,0.4);
+  }
+  #killTag {
+    background: rgba(0,0,0,0.55);
+    color: #fff; font-weight: 600; font-size: 14px;
+    padding: 6px 12px; border-radius: 6px;
+  }
 
-  --border:#dadce0;
-  --border-focus:#1a73e8;
+  #compass {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 260px; height: 26px;
+    background: rgba(0,0,0,0.45); border-radius: 4px;
+    overflow: hidden; border: 1px solid rgba(255,255,255,0.15);
+  }
+  #compassInner {
+    position: absolute; top: 0; height: 100%;
+    display: flex; align-items: center; white-space: nowrap;
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85);
+  }
+  .compassMark { padding: 0 16px; }
+  .compassMark.n { color: #ff6b6b; }
 
-  --r:8px;
-  --r2:12px;
-  --r3:999px;
-  --font:'Plus Jakarta Sans',sans-serif;
-  --shadow:0 1px 3px rgba(60,64,67,.15),0 1px 2px rgba(60,64,67,.12);
-  --shadow-md:0 2px 8px rgba(60,64,67,.15),0 1px 3px rgba(60,64,67,.1);
-}
-html{height:100%;overflow:hidden}
-body{background:var(--bg-page);color:var(--text);font-family:var(--font);font-size:14px;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+  #lobbyMsg {
+    position: absolute; top: 46px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); color: #fff;
+    font-size: 14px; font-weight: 600; padding: 7px 18px; border-radius: 4px;
+  }
 
-/* HEADER */
-.header{
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-  padding:0 16px;
-  height:56px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-shrink:0;
-}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-icon{
-  width:36px;height:36px;
-  border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  position:relative;overflow:hidden;
-  background:#fff;
-  border:1.5px solid var(--border);
-}
-/* Google-style colorful dots */
-.logo-icon::before{
-  content:'';
-  position:absolute;inset:0;
-  background:
-    radial-gradient(circle at 35% 35%, #4285f4 6px, transparent 6px),
-    radial-gradient(circle at 65% 35%, #ea4335 6px, transparent 6px),
-    radial-gradient(circle at 35% 65%, #34a853 6px, transparent 6px),
-    radial-gradient(circle at 65% 65%, #fbbc04 6px, transparent 6px);
-}
-.logo-name{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px}
-.logo-name span.b{color:#4285f4}
-.logo-name span.r{color:#ea4335}
-.logo-name span.y{color:#fbbc04}
-.logo-name span.g{color:#34a853}
-.header-chip{
-  font-size:11px;font-weight:600;
-  padding:4px 11px;
-  background:var(--blue-light);
-  color:var(--blue);
-  border-radius:var(--r3);
-  letter-spacing:.2px;
-}
+  /* ── WEAPON PANEL (top-right, Free Fire style) ── */
+  #weaponPanel {
+    position: absolute; top: 10px; right: 12px;
+    pointer-events: auto;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  #weaponMain {
+    background: rgba(0,0,0,0.62);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; padding: 8px 14px;
+    min-width: 130px; text-align: right;
+  }
+  #weaponName {
+    color: #ffd45e; font-weight: 800; font-size: 15px; letter-spacing: 0.5px;
+  }
+  #ammoDisplay {
+    color: #fff; font-size: 22px; font-weight: 800; margin-top: 2px;
+  }
+  #ammoDisplay span { color: rgba(255,255,255,0.45); font-size: 16px; font-weight: 600; }
+  #weaponSlots {
+    display: flex; gap: 6px;
+  }
+  .wslot {
+    width: 48px; height: 48px;
+    background: rgba(0,0,0,0.55);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .wslot.active {
+    border-color: #ffd45e;
+    background: rgba(255,212,94,0.15);
+    transform: scale(1.05);
+  }
 
-/* STEP NAV */
-.step-nav{
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-  display:flex;
-  flex-shrink:0;
-  overflow-x:auto;scrollbar-width:none;
-}
-.step-nav::-webkit-scrollbar{display:none}
-.step-tab{
-  flex:1;min-width:72px;
-  padding:14px 6px 12px;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  cursor:pointer;border:none;background:none;
-  color:var(--text3);
-  font-family:var(--font);font-size:11px;font-weight:600;
-  letter-spacing:.3px;position:relative;
-  transition:color .2s;
-}
-.step-tab i{font-size:20px;transition:color .2s}
-.step-tab.active{color:var(--blue)}
-.step-tab.active i{color:var(--blue)}
-.step-tab::after{
-  content:'';
-  position:absolute;bottom:0;left:8%;right:8%;
-  height:3px;background:var(--blue);
-  border-radius:3px 3px 0 0;
-  transform:scaleX(0);
-  transition:transform .22s cubic-bezier(.4,0,.2,1);
-}
-.step-tab.active::after{transform:scaleX(1)}
-.step-tab.done i{color:var(--green)}
-.step-tab.done{color:var(--green)}
+  /* ── CROSSHAIR ── */
+  #crosshairWrap {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    transition: width 0.2s, height 0.2s;
+  }
+  #crosshairWrap.aiming { width: 24px; height: 24px; }
+  #crosshairRing {
+    position: absolute; inset: 0;
+    border: 2px solid rgba(255,255,255,0.55);
+    border-radius: 50%;
+    transition: inset 0.2s, opacity 0.2s;
+  }
+  #crosshairWrap.aiming #crosshairRing { inset: 4px; border-width: 1.5px; opacity: 0.9; }
+  #crosshairWrap.onTarget #crosshairRing {
+    border-color: #ff2d2d;
+    border-width: 2.5px;
+    box-shadow: 0 0 12px rgba(255,40,40,0.7);
+  }
+  #crosshairWrap.onTarget #crosshairDot {
+    background: #ff2d2d;
+    width: 7px; height: 7px;
+    box-shadow: 0 0 8px rgba(255,50,50,0.9);
+  }
+  #crosshairDot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 0 4px rgba(0,0,0,0.8);
+  }
 
-/* SCREENS */
-.screen{
-  flex:1;
-  overflow-y:auto;
-  overflow-x:hidden;
-  -webkit-overflow-scrolling:touch;
-  padding:16px;
-  padding-bottom:80px;
-  display:none;
-  flex-direction:column;
-  gap:12px;
-  min-height:0;
-}
-.screen.active{display:flex}
+  /* ── LEFT: JOYSTICK + RUN ── */
+  #joystickZone {
+    position: absolute; left: 22px; bottom: 28px;
+    width: 128px; height: 128px; pointer-events: auto;
+  }
+  #joystickBase {
+    position: absolute; width: 128px; height: 128px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.14), rgba(0,0,0,0.38));
+    border: 2px solid rgba(255,255,255,0.28);
+    box-shadow: inset 0 0 16px rgba(0,0,0,0.4);
+  }
+  #joystickStick {
+    position: absolute; width: 54px; height: 54px;
+    left: 37px; top: 37px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff, #c9c9c9);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  }
 
-/* CARD */
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow)}
-.card-head{
-  padding:12px 16px;
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;
-}
-.card-head-dot{width:8px;height:8px;border-radius:50%}
-.card-head-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.1px}
-.card-body{padding:14px 16px}
+  #runBtn {
+    position: absolute; left: 168px; bottom: 72px;
+    width: 58px; height: 58px; border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    border: 2px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; pointer-events: auto;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  }
+  #runBtn.active {
+    background: rgba(255,212,94,0.35);
+    border-color: #ffd45e;
+    transform: scale(0.94);
+  }
 
-/* FORM */
-.field{margin-bottom:13px}
-.field:last-child{margin-bottom:0}
-.label{display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.6px;text-transform:uppercase;margin-bottom:5px}
-input[type=text],input[type=email],select,textarea{
-  width:100%;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:10px 12px;
-  color:var(--text);
-  font-family:var(--font);font-size:14px;font-weight:400;
-  outline:none;
-  transition:border-color .15s,box-shadow .15s;
-  appearance:none;-webkit-appearance:none;
-}
-input:focus,select:focus,textarea:focus{
-  border-color:var(--blue);
-  box-shadow:0 0 0 3px rgba(26,115,232,.12);
-}
-input::placeholder{color:var(--text3);font-weight:400}
-select{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235f6368' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;
-}
-select option{background:#fff;color:var(--text)}
-textarea{resize:vertical;min-height:80px;line-height:1.6}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  /* ── RIGHT: FIRE / AIM / JUMP / CROUCH / PRONE (Free Fire layout) ── */
+  .actionBtn {
+    position: absolute; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: auto;
+    border: 2px solid rgba(255,255,255,0.35);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+    font-size: 22px;
+    background: rgba(0,0,0,0.48);
+    color: #fff;
+    transition: transform 0.08s, background 0.1s;
+  }
+  .actionBtn:active, .actionBtn.active {
+    transform: scale(0.9);
+    background: rgba(255,255,255,0.18);
+  }
 
-/* UPLOAD */
-.upload-zone{
-  border:2px dashed var(--border);
-  border-radius:var(--r2);
-  padding:28px 20px;text-align:center;cursor:pointer;
-  position:relative;transition:all .2s;background:#fafafa;
-}
-.upload-zone:active{background:var(--blue-light);border-color:var(--blue)}
-.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.upload-icon{font-size:36px;color:var(--blue);margin-bottom:8px;display:block}
-.upload-txt{font-size:14px;font-weight:600;color:var(--text2)}
-.upload-hint{font-size:12px;color:var(--text3);margin-top:3px}
+  #fireBtn {
+    right: 28px; bottom: 32px;
+    width: 82px; height: 82px;
+    font-size: 30px;
+    background: radial-gradient(circle at 35% 30%, rgba(220,60,60,0.85), rgba(140,20,20,0.9));
+    border-color: rgba(255,120,120,0.5);
+  }
+  #fireBtn.firing { transform: scale(0.88); }
 
-.file-chip{
-  margin-top:10px;
-  background:var(--green-light);
-  border:1px solid #ceead6;
-  border-radius:var(--r);
-  padding:10px 13px;
-  display:flex;align-items:center;gap:9px;font-size:13px;
-}
-.file-chip i{color:var(--green);font-size:18px}
-.file-chip .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text)}
-.file-chip .rm-btn{color:var(--text3);cursor:pointer;font-size:18px;flex-shrink:0}
+  #aimBtn {
+    right: 30px; bottom: 126px;
+    width: 54px; height: 54px; font-size: 18px;
+  }
+  #aimBtn.active {
+    background: rgba(100,180,255,0.35);
+    border-color: #6eb8ff;
+  }
 
-/* Q LIST */
-.q-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
-.q-item{
-  background:#fafafa;
-  border:1px solid var(--border);
-  border-radius:var(--r);
-  padding:10px 12px;
-  display:flex;align-items:flex-start;gap:9px;
-  animation:itemIn .18s ease;
-}
-@keyframes itemIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.q-badge{
-  font-size:10px;font-weight:700;
-  background:var(--blue-light);color:var(--blue);
-  border-radius:4px;padding:2px 7px;flex-shrink:0;margin-top:2px;
-}
-.q-txt{flex:1;font-size:13px;color:var(--text);line-height:1.5}
-.q-rm{color:var(--text3);cursor:pointer;font-size:17px;flex-shrink:0;padding:2px}
-.q-rm:active{color:var(--red)}
-.empty-q{text-align:center;padding:18px;font-size:13px;color:var(--text3)}
-.q-add-row{display:flex;gap:8px}
-.q-add-row input{flex:1}
+  #jumpBtn {
+    right: 118px; bottom: 36px;
+    width: 52px; height: 52px; font-size: 22px;
+  }
 
-/* STYLE OPTIONS */
-.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.style-opt{
-  background:#fafafa;
-  border:1.5px solid var(--border);
-  border-radius:var(--r2);
-  padding:13px 12px;cursor:pointer;
-  transition:all .18s;
-}
-.style-opt.active{
-  background:var(--blue-light);
-  border-color:var(--blue);
-}
-.so-icon{font-size:22px;margin-bottom:6px;color:var(--text3)}
-.style-opt.active .so-icon{color:var(--blue)}
-.so-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.so-sub{font-size:11px;color:var(--text3)}
-.style-opt.active .so-sub{color:#6faee8}
+  #crouchBtn {
+    right: 118px; bottom: 100px;
+    width: 50px; height: 50px; font-size: 18px;
+  }
 
-/* BUTTONS */
-.btn{
-  padding:10px 18px;border-radius:var(--r);border:none;
-  font-family:var(--font);font-size:14px;font-weight:600;
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  transition:all .15s;
-}
-.btn:active{transform:scale(.97)}
-.btn-primary{background:var(--blue);color:#fff}
-.btn-primary:active{background:#1557b0}
-.btn-ghost{background:#fff;color:var(--text2);border:1px solid var(--border)}
-.btn-ghost:active{background:var(--bg-hover)}
-.btn-success{background:var(--green);color:#fff}
-.btn-success:active{background:#157d32}
-.btn-full{width:100%}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.btn-icon{width:42px;height:42px;padding:0;font-size:18px}
+  #proneBtn {
+    right: 118px; bottom: 162px;
+    width: 46px; height: 46px; font-size: 16px;
+  }
 
-/* GENERATE BTN */
-.gen-btn{
-  width:100%;padding:14px;
-  border:none;border-radius:var(--r2);
-  font-family:var(--font);font-size:16px;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
-  background:var(--blue);color:#fff;
-  box-shadow:var(--shadow-md);
-  transition:all .18s;
-  letter-spacing:-.1px;
-}
-.gen-btn:active{background:#1557b0;transform:scale(.98)}
-.gen-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  #hpBar {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    width: 180px;
+  }
+  #hpBar label { color: rgba(255,255,255,0.7); font-size: 10px; font-weight: 700; }
+  #hpFill {
+    height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; margin-top: 2px;
+  }
+  #hpFill div {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #e74c3c, #ff6b6b);
+    border-radius: 4px; transition: width 0.3s;
+  }
 
-/* PROGRESS */
-.progress-card{
-  background:#fff;border:1px solid var(--border);border-radius:var(--r2);
-  padding:18px;box-shadow:var(--shadow);
-}
-.prog-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.prog-bar{height:4px;background:#e8eaed;border-radius:4px;overflow:hidden;margin-bottom:12px}
-.prog-fill{height:100%;background:var(--blue);border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1);width:0}
-.prog-chips{display:flex;flex-wrap:wrap;gap:6px}
-.p-chip{font-size:11px;font-weight:600;padding:3px 10px;border-radius:var(--r3);background:#f1f3f4;color:var(--text3)}
-.p-chip.done{background:var(--green-light);color:var(--green)}
-.p-chip.run{background:var(--blue-light);color:var(--blue);animation:chipPulse 1.4s ease infinite}
-@keyframes chipPulse{0%,100%{opacity:1}50%{opacity:.5}}
+  #debugTag {
+    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.35); font-size: 9px; font-family: monospace;
+  }
 
-/* OUTPUT BAR */
-.output-bar{
-  background:#fff;border:1px solid var(--border);border-radius:var(--r2);
-  padding:12px 14px;display:flex;align-items:center;justify-content:space-between;
-  box-shadow:var(--shadow);
-}
-.ob-label{font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:7px}
-.ob-label i{color:var(--green)}
-.ob-actions{display:flex;gap:8px}
-
-/* PREVIEW DOC */
-.academic-doc{background:#fff;border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow)}
-.doc-banner{
-  background:linear-gradient(135deg,#4285f4 0%,#1a73e8 100%);
-  padding:20px 18px 16px;
-}
-.doc-uni{font-size:16px;font-weight:700;color:#fff;margin-bottom:2px;letter-spacing:-.2px}
-.doc-sub{font-size:12px;color:rgba(255,255,255,.8)}
-.doc-body{padding:16px}
-.info-tbl{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px;border:1px solid var(--border)}
-.info-tbl td{padding:8px 10px;border-bottom:1px solid #f1f3f4}
-.info-tbl tr:last-child td{border-bottom:none}
-.info-tbl td:first-child{font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:var(--text2);background:#f8f9fa;width:36%}
-.section-hd{text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:10px;color:var(--text3);padding:12px 0 10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px}
-.qblock{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #f1f3f4}
-.qblock:last-child{border-bottom:none;margin-bottom:0}
-.qblock-num{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--blue);margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.qblock-q{font-size:13px;color:var(--text2);margin-bottom:10px;padding:8px 11px;background:#f8f9fa;border-left:3px solid var(--blue);border-radius:0 6px 6px 0;line-height:1.5;font-style:italic}
-.qblock-a{font-size:13px;color:var(--text);line-height:1.8}
-.qblock-a p{margin-bottom:8px}
-.qblock-a strong{font-weight:700;color:var(--text)}
-
-/* EMPTY */
-.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px 24px;text-align:center}
-.empty-ico{font-size:56px;color:#dadce0;margin-bottom:4px}
-.empty-ttl{font-size:17px;font-weight:700;color:var(--text)}
-.empty-sub{font-size:13px;color:var(--text3);line-height:1.6;max-width:260px}
-
-/* ERROR */
-.err-card{background:var(--red-light);border:1px solid #f5c6c3;border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--red);display:flex;gap:9px;line-height:1.5}
-
-/* TOAST */
-.toast{
-  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--text);
-  border-radius:var(--r3);
-  padding:11px 18px;
-  font-size:13px;font-weight:500;
-  color:#fff;z-index:9999;
-  display:flex;align-items:center;gap:8px;
-  transition:transform .25s ease,opacity .25s ease;
-  white-space:nowrap;max-width:90vw;
-  box-shadow:0 4px 16px rgba(0,0,0,.25);
-  opacity:0;
-}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.toast.success i{color:#34a853}
-.toast.error i{color:#ea4335}
-
-/* BOTTOM ACTION */
-.bottom-action{
-  padding:10px 16px;
-  flex-shrink:0;
-  background:var(--bg);
-  border-top:1px solid var(--border);
-  position:fixed;
-  bottom:0;left:0;right:0;
-  z-index:100;
-  box-shadow:0 -1px 4px rgba(60,64,67,.1);
-}
-
-/* SPIN */
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-.spin{animation:spin .9s linear infinite}
-
-/* STATUS DOT */
-.extract-status{margin-top:7px;font-size:12px;color:var(--text3)}
-
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#dadce0;border-radius:4px}
-
-/* DIVIDER */
-.divider{height:1px;background:var(--border);margin:10px 0}
+  /* invisible right-half look zone hint (optional debug off) */
+  #lookZone {
+    position: absolute; top: 0; right: 0; width: 58%; height: 100%;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="logo">
-    <div class="logo-icon"></div>
-    <span class="logo-name">
-      <span class="b">A</span><span class="r">s</span><span class="y">s</span><span class="g">i</span>gnmentAI
-    </span>
+<div id="gameCanvas"></div>
+
+<div id="hud">
+  <div id="topBar">
+    <div id="playerCount">34</div>
+    <div id="killTag">💀 0</div>
   </div>
-  <div class="header-chip">Sarvam AI</div>
-</header>
 
-<nav class="step-nav">
-  <button class="step-tab active" onclick="goStep(0)" id="stab0"><i class="ti ti-school"></i>Info</button>
-  <button class="step-tab" onclick="goStep(1)" id="stab1"><i class="ti ti-list-details"></i>Questions</button>
-  <button class="step-tab" onclick="goStep(2)" id="stab2"><i class="ti ti-wand"></i>Generate</button>
-  <button class="step-tab" onclick="goStep(3)" id="stab3"><i class="ti ti-eye"></i>Preview</button>
-</nav>
-
-<!-- SCREEN 0: INFO -->
-<div class="screen active" id="screen0">
-  <div class="card">
-    <div class="card-head"><div class="card-head-dot" style="background:#4285f4"></div><span class="card-head-title">University Details</span></div>
-    <div class="card-body">
-      <div class="field"><label class="label">University Name</label><input type="text" id="uniName" placeholder="e.g. Manipal University Jaipur"></div>
-      <div class="field"><label class="label">Subject / Course</label><input type="text" id="subject" placeholder="e.g. Mobile Application Development"></div>
-      <div class="field row2">
-        <div><label class="label">Program</label><input type="text" id="program" placeholder="e.g. BCA"></div>
-        <div><label class="label">Semester</label>
-          <select id="semester"><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
-        </div>
-      </div>
+  <div id="compass">
+    <div id="compassInner">
+      <span class="compassMark">285</span><span class="compassMark">300</span>
+      <span class="compassMark">330</span><span class="compassMark">345</span>
+      <span class="compassMark n">N</span><span class="compassMark">15</span>
+      <span class="compassMark">30</span><span class="compassMark">45</span>
     </div>
   </div>
-  <div class="card">
-    <div class="card-head"><div class="card-head-dot" style="background:#34a853"></div><span class="card-head-title">Student Details</span></div>
-    <div class="card-body">
-      <div class="field row2">
-        <div><label class="label">Full Name</label><input type="text" id="studentName" placeholder="Your name"></div>
-        <div><label class="label">Roll Number</label><input type="text" id="rollNum" placeholder="e.g. 2314502073"></div>
-      </div>
-      <div class="field"><label class="label">Session</label><input type="text" id="session" placeholder="e.g. January/February 2026"></div>
-      <div class="field row2">
-        <div><label class="label">Set</label>
-          <select id="setNum"><option>SET-I</option><option>SET-II</option><option>SET-I & SET-II</option></select>
-        </div>
-        <div><label class="label">Words/Answer</label>
-          <select id="wordCount"><option value="300">~300 words</option><option value="500" selected>~500 words</option><option value="700">~700 words</option><option value="1000">~1000 words</option></select>
-        </div>
-      </div>
+
+  <div id="lobbyMsg">Match started</div>
+
+  <div id="weaponPanel">
+    <div id="weaponMain">
+      <div id="weaponName">AK47</div>
+      <div id="ammoDisplay">30 <span>/ 120</span></div>
+    </div>
+    <div id="weaponSlots">
+      <div class="wslot active" data-gun="AK47" title="AK47">🔫</div>
+      <div class="wslot" data-gun="SMG" title="SMG">🔫</div>
+      <div class="wslot" data-gun="Pistol" title="Pistol">🔫</div>
+      <div class="wslot" data-gun="Fist" title="Fist">👊</div>
     </div>
   </div>
-</div>
-<div class="bottom-action" id="ba0">
-  <button class="btn btn-primary btn-full" onclick="nextStep(0)"><i class="ti ti-arrow-right"></i> Continue to Questions</button>
+
+  <div id="crosshairWrap">
+    <div id="crosshairRing"></div>
+    <div id="crosshairDot"></div>
+  </div>
+
+  <div id="joystickZone">
+    <div id="joystickBase"></div>
+    <div id="joystickStick"></div>
+  </div>
+
+  <div id="runBtn" title="Run">🏃</div>
+  <div id="fireBtn" class="actionBtn" title="Fire">🎯</div>
+  <div id="aimBtn" class="actionBtn" title="Aim">⊙</div>
+  <div id="jumpBtn" class="actionBtn" title="Jump">⬆</div>
+  <div id="crouchBtn" class="actionBtn" title="Crouch">↓</div>
+  <div id="proneBtn" class="actionBtn" title="Prone">═</div>
+
+  <div id="hpBar">
+    <label>HP</label>
+    <div id="hpFill"><div></div></div>
+  </div>
+
+  <div id="debugTag">ready</div>
+  <div id="lookZone"></div>
 </div>
 
-<!-- SCREEN 1: QUESTIONS -->
-<div class="screen" id="screen1">
-  <div class="card">
-    <div class="card-head"><div class="card-head-dot" style="background:#fbbc04"></div><span class="card-head-title">Upload Question File</span></div>
-    <div class="card-body">
-      <div class="upload-zone" id="dropZone">
-        <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc" onchange="handleFile(this)">
-        <span class="upload-icon"><i class="ti ti-cloud-upload"></i></span>
-        <div class="upload-txt">Tap to upload file</div>
-        <div class="upload-hint">.docx · .txt · .pdf</div>
-      </div>
-      <div id="fileInfo"></div>
-      <div id="extractStatus" class="extract-status"></div>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-head"><div class="card-head-dot" style="background:#ea4335"></div><span class="card-head-title">Questions</span></div>
-    <div class="card-body">
-      <div id="questionList"><div class="empty-q">Upload a file or type questions below</div></div>
-      <div class="divider"></div>
-      <div class="q-add-row">
-        <input type="text" id="qInput" placeholder="Type a question…" onkeydown="if(event.key==='Enter')addQuestion()">
-        <button class="btn btn-primary btn-icon" onclick="addQuestion()"><i class="ti ti-plus"></i></button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="bottom-action" id="ba1" style="display:none">
-  <div class="row2" style="gap:10px">
-    <button class="btn btn-ghost btn-full" onclick="goStep(0)"><i class="ti ti-arrow-left"></i> Back</button>
-    <button class="btn btn-primary btn-full" onclick="nextStep(1)">Continue <i class="ti ti-arrow-right"></i></button>
-  </div>
-</div>
-
-<!-- SCREEN 2: GENERATE -->
-<div class="screen" id="screen2">
-  <div class="card">
-    <div class="card-head"><div class="card-head-dot" style="background:#9334e6"></div><span class="card-head-title">Writing Style</span></div>
-    <div class="card-body">
-      <div class="style-grid">
-        <div class="style-opt active" data-val="academic" onclick="selectStyle(this)">
-          <div class="so-icon"><i class="ti ti-book"></i></div>
-          <div class="so-name">Academic</div>
-          <div class="so-sub">Formal & structured</div>
-        </div>
-        <div class="style-opt" data-val="simple" onclick="selectStyle(this)">
-          <div class="so-icon"><i class="ti ti-sun"></i></div>
-          <div class="so-name">Simple</div>
-          <div class="so-sub">Clear & direct</div>
-        </div>
-        <div class="style-opt" data-val="detailed" onclick="selectStyle(this)">
-          <div class="so-icon"><i class="ti ti-layers"></i></div>
-          <div class="so-name">Detailed</div>
-          <div class="so-sub">Elaborate & thorough</div>
-        </div>
-        <div class="style-opt" data-val="points" onclick="selectStyle(this)">
-          <div class="so-icon"><i class="ti ti-list"></i></div>
-          <div class="so-name">Point-wise</div>
-          <div class="so-sub">Bullets & examples</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <button class="gen-btn" id="genBtn" onclick="generateAssignment()"><i class="ti ti-sparkles"></i> Generate Assignment</button>
-  <div id="progressArea"></div>
-  <div id="errorArea"></div>
-</div>
-<div class="bottom-action" id="ba2" style="display:none">
-  <button class="btn btn-ghost btn-full" onclick="goStep(1)"><i class="ti ti-arrow-left"></i> Back</button>
-</div>
-
-<!-- SCREEN 3: PREVIEW -->
-<div class="screen" id="screen3">
-  <div id="outputActions" style="display:none">
-    <div class="output-bar">
-      <span class="ob-label"><i class="ti ti-check-circle"></i> Assignment ready</span>
-      <div class="ob-actions">
-        <button class="btn btn-ghost btn-icon" onclick="copyText()" title="Copy"><i class="ti ti-copy"></i></button>
-        <button class="btn btn-success" onclick="downloadPDF()" id="dlBtn"><i class="ti ti-file-download"></i> PDF</button>
-      </div>
-    </div>
-  </div>
-  <div id="previewArea">
-    <div class="empty-state">
-      <div class="empty-ico"><i class="ti ti-file-certificate"></i></div>
-      <div class="empty-ttl">No assignment yet</div>
-      <div class="empty-sub">Go to the Generate tab to create your assignment.</div>
-    </div>
-  </div>
-</div>
-<div class="bottom-action" id="ba3" style="display:none">
-  <button class="btn btn-ghost btn-full" onclick="goStep(2)"><i class="ti ti-arrow-left"></i> Back to Generate</button>
-</div>
-
-<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toastMsg"></span></div>
-
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <script>
-const SARVAM_KEY = "sk_ac2cc57y_5YIfDcM2ewA0hpmnnCjjTb31";
-let questions = [], extractedText = "", generatedContent = [], selectedStyle = "academic";
+const THREE = window.THREE;
 
-function goStep(n) {
-  document.querySelectorAll('.screen').forEach((s,i)=>s.classList.toggle('active',i===n));
-  document.querySelectorAll('.step-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
-  ['ba0','ba1','ba2','ba3'].forEach((id,i)=>{
-    const el=document.getElementById(id);
-    if(el) el.style.display=i===n?'block':'none';
+/* ─── CONSTANTS ─── */
+const WALK_SPEED = 4.0;
+const RUN_SPEED = 8.2;
+const CROUCH_SPEED = 2.2;
+const PRONE_SPEED = 1.4;
+const ACCEL = 30;
+const FRICTION = 36;
+const TURN_SPEED = 14;
+const JUMP_VEL = 5.5;
+const GRAVITY = 16;
+const MAP_SIZE = 200;
+
+const CAM_DIST_NORMAL = 5.8;
+const CAM_DIST_AIM = 3.4;
+const CAM_HEIGHT_NORMAL = 2.6;
+const CAM_HEIGHT_AIM = 2.1;
+const CAM_HEIGHT_CROUCH = 1.8;
+const CAM_HEIGHT_PRONE = 1.1;
+const CAM_LOOK = 1.35;
+const CAM_SMOOTH = 9;
+const FOV_NORMAL = 55;
+const FOV_AIM = 38;
+const LOOK_SENS_X = 0.0042;
+const LOOK_SENS_Y = 0.0036;
+const PITCH_MIN = -1.15;  // look up (sky)
+const PITCH_MAX = 1.05;   // look down (ground/feet)
+const LOOK_ZONE_RATIO = 0.42; // left 42% = move zone, right 58% = camera swipe (Free Fire)
+
+const SKIN = 0xf2ebe8;
+const SKIN_SHADOW = 0xe0d4d0;
+
+const GUNS = {
+  AK47:   { name:'AK47',   mag:30, reserve:120, rate:0.1,  speed:55, spread:0.018, dmg:22, color:0x8B6914 },
+  SMG:    { name:'SMG',    mag:25, reserve:100, rate:0.07, speed:50, spread:0.028, dmg:14, color:0x2ecc71 },
+  Pistol: { name:'Pistol', mag:12, reserve:60,  rate:0.22, speed:48, spread:0.012, dmg:18, color:0x95a5a6 },
+  Fist:   { name:'Fist',   mag:0,  reserve:0,   rate:0.45, speed:0,  spread:0,    dmg:8,  color:0xf39c12, melee:true }
+};
+
+/* ─── THREE SETUP ─── */
+const container = document.getElementById('gameCanvas');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87b8e8);
+scene.fog = new THREE.Fog(0x9ec4e8, 45, 160);
+
+const camera = new THREE.PerspectiveCamera(FOV_NORMAL, innerWidth / innerHeight, 0.1, 300);
+const raycaster = new THREE.Raycaster();
+const screenCenter = new THREE.Vector2(0, 0);
+let crosshairTarget = null;
+
+scene.add(new THREE.HemisphereLight(0xfff0f5, 0x7a9960, 0.65));
+const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+sun.position.set(30, 50, 20);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = sun.shadow.camera.bottom = -80;
+sun.shadow.camera.right = sun.shadow.camera.top = 80;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffe8f0, 0.35);
+fill.position.set(-20, 15, -30);
+scene.add(fill);
+
+/* ─── MAP — realistic lobby terrain + buildings + trees ─── */
+const targets = [];
+const buildings = [];
+const trees = [];
+
+function makeGround() {
+  const geo = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE, 64, 64);
+  const pos = geo.attributes.position;
+  const colors = [];
+  const c1 = new THREE.Color(0x5d8a48), c2 = new THREE.Color(0x6e9c55), c3 = new THREE.Color(0x4a7540);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    const n = Math.sin(x*0.06)*Math.cos(y*0.05)*0.35 + Math.sin(x*0.15+y*0.12)*0.12;
+    pos.setZ(i, n);
+    const mix = ((Math.sin(x*0.11)+Math.cos(y*0.09))+2)/4;
+    const col = c1.clone().lerp(mix>0.5?c2:c3, mix);
+    colors.push(col.r, col.g, col.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors:true, roughness:0.94, metalness:0 }));
+  mesh.rotation.x = -Math.PI/2;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+
+  // dirt paths
+  const pathMat = new THREE.MeshStandardMaterial({ color:0xb8a078, roughness:0.98 });
+  [[0,0,22],[30,-20,16],[-25,15,14]].forEach(([x,z,r]) => {
+    const p = new THREE.Mesh(new THREE.CircleGeometry(r, 24), pathMat);
+    p.rotation.x = -Math.PI/2; p.position.set(x, 0.03, z); p.receiveShadow = true;
+    scene.add(p);
   });
 }
 
-function nextStep(from) {
-  if(from===0){
-    if(!v('uniName')||!v('studentName')||!v('rollNum')||!v('subject')){showToast('Fill all required fields','error');return;}
-    markDone(0);goStep(1);
-  } else if(from===1){
-    if(!questions.length&&!extractedText){showToast('Add questions or upload a file','error');return;}
-    markDone(1);goStep(2);
+function makeHouse(x, z, w, d, h, wallC, roofC) {
+  const g = new THREE.Group();
+  const wallMat = new THREE.MeshStandardMaterial({ color:wallC, roughness:0.88 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+  body.position.y = h/2; body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w,d)*0.72, h*0.45, 4), new THREE.MeshStandardMaterial({ color:roofC, roughness:0.8 }));
+  roof.position.y = h + h*0.2; roof.rotation.y = Math.PI/4; roof.castShadow = true;
+  g.add(roof);
+  // door
+  const door = new THREE.Mesh(new THREE.BoxGeometry(w*0.22, h*0.45, 0.08), new THREE.MeshStandardMaterial({ color:0x4a3728 }));
+  door.position.set(0, h*0.22, d/2+0.04);
+  g.add(door);
+  g.position.set(x, 0, z);
+  scene.add(g);
+  buildings.push(g);
+  return g;
+}
+
+function makeTree(x, z) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.28,2.2,8), new THREE.MeshStandardMaterial({ color:0x5c3d1e, roughness:0.95 }));
+  trunk.position.y = 1.1; trunk.castShadow = true;
+  const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.4+Math.random()*0.5, 10, 8), new THREE.MeshStandardMaterial({ color:0x2d6b35, roughness:0.85 }));
+  leaves.position.y = 2.8; leaves.castShadow = true;
+  g.add(trunk, leaves);
+  g.position.set(x, 0, z);
+  scene.add(g);
+  trees.push(g);
+}
+
+function makeEnvironment() {
+  makeGround();
+  // village cluster
+  makeHouse(-35, -30, 8, 7, 4.5, 0xd4c4a8, 0x8b4513);
+  makeHouse(-22, -38, 6, 5.5, 3.8, 0xe8dcc8, 0xa0522d);
+  makeHouse(28, 25, 9, 8, 5, 0xcfc0a0, 0x704214);
+  makeHouse(40, 10, 5, 6, 3.5, 0xe0d5c5, 0x8b6914);
+  makeHouse(-15, 35, 7, 6, 4, 0xd8ccb0, 0x6b3a2a);
+  makeHouse(10, -40, 10, 7, 4.8, 0xbdb09a, 0x5c3317);
+  // garage/shed
+  const shed = new THREE.Mesh(new THREE.BoxGeometry(12, 3.5, 8), new THREE.MeshStandardMaterial({ color:0x888888, roughness:0.9 }));
+  shed.position.set(45, 1.75, -25); shed.castShadow = true; scene.add(shed); buildings.push(shed);
+
+  for (let i = 0; i < 55; i++) {
+    const x = (Math.random()-0.5)*MAP_SIZE*0.85, z = (Math.random()-0.5)*MAP_SIZE*0.85;
+    if (Math.hypot(x,z) < 8) continue;
+    makeTree(x, z);
   }
+
+  // crates
+  const boxMat = new THREE.MeshStandardMaterial({ color:0xc0392b, roughness:0.7 });
+  [[15,20],[-20,10],[8,-25]].forEach(([x,z], i) => {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2, 1.2), boxMat.clone());
+    t.position.set(x, 1, z); t.castShadow = true;
+    t.userData = { hp: 100, id: i, type:'crate' };
+    scene.add(t); targets.push(t);
+  });
+}
+makeEnvironment();
+
+/* ─── CHARACTER ─── */
+function makeMat(c) { return new THREE.MeshStandardMaterial({ color:c, roughness:0.55, metalness:0.02 }); }
+function darkenColor(c, f) {
+  const r = ((c>>16)&255)*f|0, g = ((c>>8)&255)*f|0, b = (c&255)*f|0;
+  return (r<<16)|(g<<8)|b;
+}
+function makeLimb(rt, rb, h, c) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 12), makeMat(c));
+  m.castShadow = true; m.position.y = -h/2; return m;
 }
 
-function v(id){return document.getElementById(id).value.trim();}
-function markDone(n){document.getElementById('stab'+n).classList.add('done');}
+function createCharacter(tintColor) {
+  const skin = tintColor || SKIN;
+  const skinSh = tintColor ? darkenColor(tintColor, 0.78) : SKIN_SHADOW;
+  const root = new THREE.Group();
+  const bodyPivot = new THREE.Group();
+  bodyPivot.position.y = 0.95;
+  root.add(bodyPivot);
 
-function selectStyle(el){
-  document.querySelectorAll('.style-opt').forEach(e=>e.classList.remove('active'));
-  el.classList.add('active');selectedStyle=el.dataset.val;
-}
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.38,0.55,8,16), makeMat(skin));
+  torso.castShadow = true; torso.position.y = 0.35;
+  bodyPivot.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42,20,16), makeMat(skin));
+  head.castShadow = true; head.position.y = 1.05;
+  bodyPivot.add(head);
 
-function addQuestion(text){
-  const inp=document.getElementById('qInput');
-  const q=text||inp.value.trim();if(!q)return;
-  questions.push(q);renderQuestions();inp.value='';
-}
-
-function removeQuestion(i){questions.splice(i,1);renderQuestions();}
-
-function renderQuestions(){
-  const el=document.getElementById('questionList');
-  if(!questions.length){el.innerHTML='<div class="empty-q">No questions added yet</div>';return;}
-  el.innerHTML=questions.map((q,i)=>`
-    <div class="q-item">
-      <span class="q-badge">Q${i+1}</span>
-      <span class="q-txt">${escapeHtml(q)}</span>
-      <i class="ti ti-x q-rm" onclick="removeQuestion(${i})"></i>
-    </div>`).join('');
-}
-
-async function handleFile(input){
-  const file=input.files[0];if(!file)return;
-  const info=document.getElementById('fileInfo');
-  const status=document.getElementById('extractStatus');
-  info.innerHTML=`<div class="file-chip"><i class="ti ti-file-text"></i><span class="fn">${escapeHtml(file.name)}</span><i class="ti ti-x rm-btn" onclick="clearFile()"></i></div>`;
-  status.innerHTML='<span><i class="ti ti-loader spin"></i> Reading…</span>';
-  try{
-    const ext=file.name.split('.').pop().toLowerCase();
-    if(ext==='txt'){extractedText=await file.text();}
-    else if(ext==='docx'||ext==='doc'){const buf=await file.arrayBuffer();const r=await mammoth.extractRawText({arrayBuffer:buf});extractedText=r.value;}
-    else{extractedText=await file.text();}
-    status.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${extractedText.length.toLocaleString()} characters extracted</span>`;
-    showToast('File loaded!','success');autoExtract(extractedText);
-  }catch(e){status.innerHTML=`<span style="color:var(--red)"><i class="ti ti-alert-circle"></i> ${e.message}</span>`;}
-}
-
-function autoExtract(text){
-  const patterns=[/Q[\.\s]*(\d+)[\.\s:]+([^\n]+)/gi,/Question\s+(\d+)[\.\s:]+([^\n]+)/gi,/^\d+[\.\)]\s+([^\n]{15,})/gm];
-  const found=new Set();
-  for(const p of patterns){let m;while((m=p.exec(text))!==null){const q=(m[2]||m[1]).trim().replace(/answer[\s\S]*/i,'').trim();if(q.length>10&&q.length<300)found.add(q);}}
-  if(found.size>0){questions=[...found];renderQuestions();showToast(`${found.size} question(s) detected!`,'success');}
-}
-
-function clearFile(){
-  document.getElementById('fileInfo').innerHTML='';
-  document.getElementById('extractStatus').textContent='';
-  document.getElementById('fileInput').value='';
-  extractedText='';questions=[];renderQuestions();
-}
-
-async function generateAssignment(){
-  const uni=v('uniName'),name=v('studentName'),roll=v('rollNum'),program=v('program'),
-        sem=v('semester'),subject=v('subject'),session=v('session'),
-        setNum=document.getElementById('setNum').value,
-        wordCount=document.getElementById('wordCount').value;
-  if(!uni||!name||!roll||!subject){showToast('Fill details first','error');goStep(0);return;}
-  let qs=[...questions];
-  if(!qs.length&&!extractedText){showToast('Add questions first','error');goStep(1);return;}
-  const btn=document.getElementById('genBtn');
-  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader spin"></i> Generating…';
-  document.getElementById('errorArea').innerHTML='';
-  document.getElementById('outputActions').style.display='none';
-  const steps=['Reading','Processing','Writing','Formatting','Done'];
-  showProg(steps,0,10);
-  if(!qs.length&&extractedText){
-    try{
-      const raw=await callApi(`Extract all assignment questions from this text. Return ONLY a JSON array of strings. Text:\n\n${extractedText.substring(0,3000)}`,1500);
-      try{qs=JSON.parse(raw.replace(/```json|```/g,'').trim());}
-      catch(e){qs=extractedText.split('\n').filter(l=>l.match(/Q\d|\d+\./i)&&l.length>15).slice(0,10).map(l=>l.replace(/^[Q\d\.\s]+/i,'').trim());}
-    }catch(e){qs=['Describe the main topics covered in the provided document.'];}
+  function leg(side) {
+    const hip = new THREE.Group(); hip.position.set(side*0.22, 0.05, 0);
+    hip.add(makeLimb(0.16,0.14,0.42,skinSh));
+    const knee = new THREE.Group(); knee.position.y = -0.42; hip.add(knee);
+    knee.add(makeLimb(0.13,0.11,0.38,skin));
+    const footPivot = new THREE.Group(); footPivot.position.y = -0.38; knee.add(footPivot);
+    const foot = new THREE.Mesh(new THREE.SphereGeometry(0.22,10,8), makeMat(skinSh));
+    foot.scale.set(1.1,0.55,1.35); foot.castShadow=true; foot.position.y=-0.08;
+    footPivot.add(foot);
+    return { hip, knee, footPivot };
   }
-  showProg(steps,1,30);
-  generatedContent=[];
-  const styleMap={
-    academic:'Write in formal academic style with technical terminology and structured paragraphs.',
-    simple:'Write in clear, accessible language while maintaining academic quality.',
-    detailed:'Write a comprehensive, detailed answer covering all aspects with examples.',
-    points:'Write in organized point-wise format with examples and clear sub-headings.'
+  function arm(side) {
+    const shoulder = new THREE.Group(); shoulder.position.set(side*0.48, 0.62, 0);
+    shoulder.add(makeLimb(0.11,0.1,0.34,skinSh));
+    const elbow = new THREE.Group(); elbow.position.y = -0.34; shoulder.add(elbow);
+    elbow.add(makeLimb(0.09,0.08,0.3,skin));
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.18,10,8), makeMat(skinSh));
+    hand.scale.set(1,0.9,0.85); hand.position.y=-0.42; elbow.add(hand);
+    return { shoulder, elbow, hand };
+  }
+
+  const limbs = { leftLeg:leg(-1), rightLeg:leg(1), leftArm:arm(-1), rightArm:arm(1) };
+  bodyPivot.add(limbs.leftLeg.hip, limbs.rightLeg.hip, limbs.leftArm.shoulder, limbs.rightArm.shoulder);
+
+  // gun mesh on right hand (player only — hidden for bots via tintColor check)
+  const gunGroup = new THREE.Group();
+  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.1,0.55), makeMat(0x333333));
+  gunBody.position.set(0, -0.35, -0.2);
+  const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.3,6), makeMat(0x222222));
+  gunBarrel.rotation.x = Math.PI/2; gunBarrel.position.set(0,-0.32,-0.55);
+  gunGroup.add(gunBody, gunBarrel);
+  limbs.rightArm.elbow.add(gunGroup);
+  if (tintColor) { gunGroup.visible = true; gunBody.material = gunBody.material.clone(); gunBody.material.color.setHex(0x444444); }
+
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.45,16), new THREE.MeshBasicMaterial({ color:0, transparent:true, opacity:0.22 }));
+  shadow.rotation.x = -Math.PI/2; shadow.position.y = 0.02;
+  root.add(shadow);
+
+  return { root, bodyPivot, limbs, gunGroup, animPhase:0 };
+}
+
+const character = createCharacter();
+scene.add(character.root);
+
+const bots = [];
+
+/* ─── DUMMY BOTS (wandering enemies) ─── */
+function spawnBot(x, z, tint) {
+  const ch = createCharacter(tint || 0xe74c3c);
+  ch.root.position.set(x, 0, z);
+  scene.add(ch.root);
+  const bot = {
+    x, z, vx:0, vz:0, yaw: Math.random()*Math.PI*2,
+    hp: 100, mesh: ch.root, char: ch,
+    state: 'wander', timer: 1 + Math.random()*3,
+    wanderA: Math.random()*Math.PI*2,
+    speed: 2.5 + Math.random()*1.5,
+    alive: true, name: 'Bot' + (bots.length + 1),
+    fireCd: 0.5 + Math.random(),
+    hitRadius: 0.65
   };
-  for(let i=0;i<qs.length;i++){
-    const q=qs[i];
-    showProg(steps,2,Math.round(30+((i+1)/qs.length)*60));
-    const ctx=extractedText?`\n\nContext:\n${extractedText.substring(0,2000)}`:'';
-    const prompt=`You are an expert academic writer for ${program||'BCA'} students at ${uni}.\n\nSubject: ${subject}\nQuestion ${i+1}: ${q}${ctx}\n\nWrite a complete answer (~${wordCount} words). ${styleMap[selectedStyle]}\nInclude introduction, main body with examples, conclusion. Do NOT repeat the question text.`;
-    try{
-      let ans=await callApi(prompt,2000);
-      let clean=sanitize(ans);
-      clean=await ensureComplete(clean,prompt,parseInt(wordCount)||500);
-      generatedContent.push({q:`Q.${i+1} ${q}`,a:clean});
-    }catch(e){generatedContent.push({q:`Q.${i+1} ${q}`,a:`[Error: ${e.message}]`});}
+  bots.push(bot);
+  return bot;
+}
+
+for (let i = 0; i < 8; i++) {
+  const ang = (i / 8) * Math.PI * 2;
+  const dist = 18 + Math.random() * 25;
+  spawnBot(Math.cos(ang)*dist, Math.sin(ang)*dist, [0xe74c3c,0x3498db,0x9b59b6,0xe67e22][i%4]);
+}
+document.getElementById('playerCount').textContent = bots.filter(b=>b.alive).length + 1;
+
+/* ─── PLAYER STATE ─── */
+const player = {
+  x:0, z:0, y:0, vy:0,
+  vx:0, vz:0, yaw:0,
+  moving:false, sprinting:false, speed:0, animBlend:0,
+  stance:'stand', // stand | crouch | prone
+  grounded:true,
+  hp:100,
+  gun:'AK47',
+  mag:30, reserve:120,
+  fireCd:0, recoil:0,
+  aiming:false,
+  kills:0
+};
+
+const halfMap = MAP_SIZE/2 - 1.5;
+const bullets = [];
+const enemyBullets = [];
+const particles = [];
+const camState = { x:0, y:CAM_HEIGHT_NORMAL, z:CAM_DIST_NORMAL, yaw:0, pitch:0.12, fov:FOV_NORMAL };
+const lookDrag = { active:false, touchId:null, mouse:false, lastX:0, lastY:0 };
+
+/* ─── DOM REFS ─── */
+const joystickZone = document.getElementById('joystickZone');
+const joystickStick = document.getElementById('joystickStick');
+const runBtn = document.getElementById('runBtn');
+const fireBtn = document.getElementById('fireBtn');
+const aimBtn = document.getElementById('aimBtn');
+const jumpBtn = document.getElementById('jumpBtn');
+const crouchBtn = document.getElementById('crouchBtn');
+const proneBtn = document.getElementById('proneBtn');
+const weaponName = document.getElementById('weaponName');
+const ammoDisplay = document.getElementById('ammoDisplay');
+const crosshairWrap = document.getElementById('crosshairWrap');
+const compassInner = document.getElementById('compassInner');
+const killTag = document.getElementById('killTag');
+const debugTag = document.getElementById('debugTag');
+const lobbyMsg = document.getElementById('lobbyMsg');
+const hpFillBar = document.querySelector('#hpFill div');
+
+const input = { dx:0, dy:0, sprint:false, fire:false, aim:false, keyState:{} };
+const JOY_R = 45;
+let joyTouchId = null, joyMouse = false;
+
+/* ─── INPUT HELPERS ─── */
+function bindBtn(el, on, off) {
+  el.addEventListener('touchstart', e => { e.preventDefault(); on(); }, { passive:false });
+  el.addEventListener('touchend', e => { e.preventDefault(); off(); }, { passive:false });
+  el.addEventListener('mousedown', on);
+  el.addEventListener('mouseup', off);
+  el.addEventListener('mouseleave', off);
+}
+
+function joyCenter() {
+  const r = joystickZone.getBoundingClientRect();
+  return { x:r.left+r.width/2, y:r.top+r.height/2 };
+}
+
+function joyMove(cx, cy) {
+  const c = joyCenter();
+  let dx = cx-c.x, dy = cy-c.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > JOY_R) { const s = JOY_R/dist; dx*=s; dy*=s; }
+  joystickStick.style.transform = `translate(${dx}px,${dy}px)`;
+  const norm = Math.min(dist/JOY_R, 1);
+  if (norm < 0.1) { input.dx = 0; input.dy = 0; }
+  else {
+    input.dx = dx/JOY_R;
+    input.dy = dy/JOY_R;
+    const m = Math.hypot(input.dx, input.dy);
+    if (m > 1) { input.dx/=m; input.dy/=m; }
   }
-  showProg(steps,4,100);
-  await sleep(300);
-  document.getElementById('progressArea').innerHTML='';
-  renderDoc({uni,name,roll,program,sem,subject,session,setNum});
-  markDone(2);markDone(3);
-  goStep(3);
-  btn.disabled=false;btn.innerHTML='<i class="ti ti-sparkles"></i> Generate Assignment';
-  document.getElementById('outputActions').style.display='block';
-  showToast('Assignment ready!','success');
 }
 
-function showProg(steps,cur,pct){
-  document.getElementById('progressArea').innerHTML=`
-    <div class="progress-card">
-      <div class="prog-title"><i class="ti ti-loader spin"></i> Generating your assignment…</div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div class="prog-chips">${steps.map((s,i)=>`<span class="p-chip ${i<cur?'done':i===cur?'run':''}">${i<cur?'✓ ':''}${s}</span>`).join('')}</div>
-    </div>`;
+function joyReset() { input.dx=0; input.dy=0; joystickStick.style.transform='translate(0,0)'; }
+
+joystickZone.addEventListener('touchstart', e => {
+  e.preventDefault(); joyTouchId = e.changedTouches[0].identifier;
+  joyMove(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+}, { passive:false });
+joystickZone.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) if (t.identifier===joyTouchId) joyMove(t.clientX, t.clientY);
+}, { passive:false });
+joystickZone.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) if (t.identifier===joyTouchId) { joyTouchId=null; joyReset(); }
+});
+joystickZone.addEventListener('touchcancel', e => {
+  for (const t of e.changedTouches) if (t.identifier===joyTouchId) { joyTouchId=null; joyReset(); }
+});
+joystickZone.addEventListener('mousedown', e => { joyMouse=true; joyMove(e.clientX,e.clientY); });
+window.addEventListener('mousemove', e => { if (joyMouse) joyMove(e.clientX,e.clientY); });
+window.addEventListener('mouseup', () => { if (joyMouse) { joyMouse=false; joyReset(); } });
+
+bindBtn(runBtn, () => { input.sprint=true; runBtn.classList.add('active'); },
+                  () => { input.sprint=false; runBtn.classList.remove('active'); });
+bindBtn(fireBtn, () => { input.fire=true; fireBtn.classList.add('firing'); },
+                 () => { input.fire=false; fireBtn.classList.remove('firing'); });
+bindBtn(aimBtn, () => { input.aim=true; player.aiming=true; aimBtn.classList.add('active'); crosshairWrap.classList.add('aiming'); },
+                () => { input.aim=false; player.aiming=false; aimBtn.classList.remove('active'); crosshairWrap.classList.remove('aiming'); });
+
+jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); doJump(); }, { passive:false });
+jumpBtn.addEventListener('mousedown', doJump);
+
+function setStance(s) {
+  player.stance = s;
+  crouchBtn.classList.toggle('active', s==='crouch');
+  proneBtn.classList.toggle('active', s==='prone');
+}
+crouchBtn.addEventListener('touchstart', e => { e.preventDefault(); setStance(player.stance==='crouch'?'stand':'crouch'); }, { passive:false });
+crouchBtn.addEventListener('mousedown', () => setStance(player.stance==='crouch'?'stand':'crouch'));
+proneBtn.addEventListener('touchstart', e => { e.preventDefault(); setStance(player.stance==='prone'?'stand':'prone'); }, { passive:false });
+proneBtn.addEventListener('mousedown', () => setStance(player.stance==='prone'?'stand':'prone'));
+
+window.addEventListener('keydown', e => {
+  input.keyState[e.key.toLowerCase()] = true;
+  if (e.key === ' ') doJump();
+});
+window.addEventListener('keyup', e => { input.keyState[e.key.toLowerCase()] = false; });
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ─── FREE FIRE: right-side screen swipe = camera look ─── */
+function isOnUIButton(x, y) {
+  const sels = '#joystickZone,#runBtn,.actionBtn,.wslot,#weaponPanel,#weaponMain,#topBar,#compass,#lobbyMsg,#hpBar';
+  for (const el of document.querySelectorAll(sels)) {
+    const r = el.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+  }
+  return false;
 }
 
-function renderDoc({uni,name,roll,program,sem,subject,session,setNum}){
-  const area=document.getElementById('previewArea');
-  const qBlocks=generatedContent.map((item,i)=>{
-    const qText=escapeHtml(item.q.replace(/^Q\.\d+\s*/,''));
-    const paras=(item.a||'').split(/\n{2,}/).map(p=>p.trim()).filter(Boolean);
-    const aHtml=paras.map(p=>{
-      if(p.indexOf('%%H_START%%')!==-1){const inner=p.replace(/.*?%%H_START%%(.*?)%%H_END%%.*/,'$1').trim();return `<p><strong>${escapeHtml(inner)}</strong></p>`;}
-      return `<p>${escapeHtml(p).replace(/\n/g,'<br>')}</p>`;
-    }).join('');
-    return `<div class="qblock"><div class="qblock-num"><i class="ti ti-circle-dot"></i> Question ${i+1}</div><div class="qblock-q">${qText}</div><div class="qblock-a">${aHtml}</div></div>`;
-  }).join('');
-  area.innerHTML=`<div class="academic-doc" id="assignDoc">
-    <div class="doc-banner">
-      <div class="doc-uni">${escapeHtml(uni)}</div>
-      <div class="doc-sub">${escapeHtml(subject)} · Assignment · ${escapeHtml(setNum)}</div>
-    </div>
-    <div class="doc-body">
-      <table class="info-tbl">
-        <tr><td>Name</td><td>${escapeHtml(name)}</td></tr>
-        <tr><td>Roll</td><td>${escapeHtml(roll)}</td></tr>
-        <tr><td>Program</td><td>${escapeHtml(program)}</td></tr>
-        <tr><td>Semester</td><td>${escapeHtml(sem)}</td></tr>
-        <tr><td>Course</td><td>${escapeHtml(subject)}</td></tr>
-        <tr><td>Session</td><td>${escapeHtml(session)}</td></tr>
-      </table>
-      <div class="section-hd">Answers</div>
-      ${qBlocks}
-    </div>
-  </div>`;
+function isLookZone(x) { return x > innerWidth * LOOK_ZONE_RATIO; }
+
+function applyLookDelta(dx, dy) {
+  camState.yaw -= dx * LOOK_SENS_X;
+  // finger up = look up, finger down = look down (full range)
+  camState.pitch = Math.max(PITCH_MIN, Math.min(PITCH_MAX, camState.pitch - dy * LOOK_SENS_Y));
 }
 
-function sanitize(txt){
-  if(!txt)return'';
-  txt=txt.replace(/```[\s\S]*?```/g,'').replace(/<think>[\s\S]*?<\/think>/gi,'');
-  txt=txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/__(.*?)__/g,'$1');
-  txt=txt.replace(/^#{1,6}\s*(.*)$/gm,'%%H_START%%$1%%H_END%%');
-  const kill=[/^assistant[:\-]/i,/^ai[:\-]/i,/^as an ai/i,/^as an assistant/i,/^\[.*\]$/i];
-  const lines=txt.split(/\r?\n/).map(l=>l.replace(/<[^>]*>/g,'')).filter(l=>{
-    const t=l.trim();if(!t)return false;
-    for(const p of kill)if(p.test(t))return false;return true;
+function startLook(x, y, id) {
+  if (!isLookZone(x) || isOnUIButton(x, y)) return false;
+  lookDrag.active = true;
+  lookDrag.touchId = id;
+  lookDrag.lastX = x;
+  lookDrag.lastY = y;
+  return true;
+}
+
+function moveLook(x, y) {
+  if (!lookDrag.active) return;
+  applyLookDelta(x - lookDrag.lastX, y - lookDrag.lastY);
+  lookDrag.lastX = x;
+  lookDrag.lastY = y;
+}
+
+function endLook(id) {
+  if (lookDrag.touchId === id || id === 'mouse') {
+    lookDrag.active = false;
+    lookDrag.touchId = null;
+    lookDrag.mouse = false;
+  }
+}
+
+renderer.domElement.addEventListener('touchstart', e => {
+  for (const t of e.changedTouches) {
+    if (startLook(t.clientX, t.clientY, t.identifier)) e.preventDefault();
+  }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchmove', e => {
+  for (const t of e.touches) {
+    if (t.identifier === lookDrag.touchId) {
+      e.preventDefault();
+      moveLook(t.clientX, t.clientY);
+    }
+  }
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchend', e => {
+  for (const t of e.changedTouches) endLook(t.identifier);
+});
+renderer.domElement.addEventListener('touchcancel', e => {
+  for (const t of e.changedTouches) endLook(t.identifier);
+});
+
+renderer.domElement.addEventListener('mousedown', e => {
+  if (e.button === 2 || (e.button === 0 && isLookZone(e.clientX, e.clientY) && !isOnUIButton(e.clientX, e.clientY))) {
+    lookDrag.mouse = true;
+    lookDrag.active = true;
+    lookDrag.touchId = 'mouse';
+    lookDrag.lastX = e.clientX;
+    lookDrag.lastY = e.clientY;
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (lookDrag.mouse) moveLook(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', e => {
+  if (lookDrag.mouse) endLook('mouse');
+});
+
+/* ─── GUN SOUND (Web Audio — no external file needed) ─── */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+document.body.addEventListener('touchstart', ensureAudio, { once: true });
+document.body.addEventListener('click', ensureAudio, { once: true });
+
+function playGunSound(gun) {
+  ensureAudio();
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const isSmg = gun === 'SMG';
+  const isPistol = gun === 'Pistol';
+
+  // noise burst (gunshot crack)
+  const len = Math.floor(audioCtx.sampleRate * (isSmg ? 0.06 : 0.09));
+  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buf;
+  const ng = audioCtx.createGain();
+  ng.gain.setValueAtTime(isPistol ? 0.35 : isSmg ? 0.28 : 0.42, t);
+  ng.gain.exponentialRampToValueAtTime(0.001, t + (isSmg ? 0.05 : 0.08));
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = isSmg ? 1800 : 900; bp.Q.value = 0.6;
+  noise.connect(bp); bp.connect(ng); ng.connect(audioCtx.destination);
+  noise.start(t); noise.stop(t + 0.1);
+
+  // low thump
+  const osc = audioCtx.createOscillator();
+  const og = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(isPistol ? 180 : isSmg ? 120 : 90, t);
+  osc.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+  og.gain.setValueAtTime(0.25, t);
+  og.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+  osc.connect(og); og.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t + 0.15);
+}
+
+function kbVec() {
+  const k = input.keyState;
+  let dx=0, dy=0;
+  if (k['w']||k['arrowup']) dy -= 1;
+  if (k['s']||k['arrowdown']) dy += 1;
+  if (k['a']||k['arrowleft']) dx -= 1;
+  if (k['d']||k['arrowright']) dx += 1;
+  if (dx&&dy) { const m=Math.hypot(dx,dy); dx/=m; dy/=m; }
+  return { dx, dy, sprint:k['shift'], fire:k['f'], aim:k['q'] };
+}
+
+function doJump() {
+  if (player.grounded && player.stance === 'stand') {
+    player.vy = JUMP_VEL;
+    player.grounded = false;
+  }
+}
+
+/* ─── WEAPON SWITCH ─── */
+document.querySelectorAll('.wslot').forEach(slot => {
+  slot.addEventListener('click', () => switchGun(slot.dataset.gun));
+  slot.addEventListener('touchstart', e => { e.preventDefault(); switchGun(slot.dataset.gun); }, { passive:false });
+});
+
+function switchGun(name) {
+  if (!GUNS[name]) return;
+  player.gun = name;
+  const g = GUNS[name];
+  player.mag = g.mag;
+  player.reserve = g.reserve;
+  weaponName.textContent = g.name;
+  updateAmmoUI();
+  document.querySelectorAll('.wslot').forEach(s => s.classList.toggle('active', s.dataset.gun===name));
+  character.gunGroup.visible = name !== 'Fist';
+  const col = g.color;
+  character.gunGroup.children[0].material.color.setHex(col);
+}
+
+function updateAmmoUI() {
+  const g = GUNS[player.gun];
+  if (g.melee) ammoDisplay.innerHTML = '—';
+  else ammoDisplay.innerHTML = `${player.mag} <span>/ ${player.reserve}</span>`;
+}
+
+/* ─── CAMERA ─── */
+function getCamYaw() { return camState.yaw; }
+
+function updateCamera(dt) {
+  const aim = player.aiming;
+  const stanceH = player.stance==='crouch' ? CAM_HEIGHT_CROUCH : player.stance==='prone' ? CAM_HEIGHT_PRONE : (aim ? CAM_HEIGHT_AIM : CAM_HEIGHT_NORMAL);
+  const dist = aim ? CAM_DIST_AIM : CAM_DIST_NORMAL;
+  const fov = aim ? FOV_AIM : FOV_NORMAL;
+  const yaw = camState.yaw;
+  const pitch = camState.pitch;
+
+  // orbit camera around player — yaw/pitch from right-screen swipe (Free Fire style)
+  const cosP = Math.cos(pitch);
+  const sinP = Math.sin(pitch);
+  const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+
+  const tx = player.x - sinY * cosP * dist;
+  const tz = player.z - cosY * cosP * dist;
+  const ty = stanceH + sinP * dist * 0.85;
+
+  camState.x += (tx - camState.x) * Math.min(1, dt * CAM_SMOOTH);
+  camState.z += (tz - camState.z) * Math.min(1, dt * CAM_SMOOTH);
+  camState.y += (ty - camState.y) * Math.min(1, dt * CAM_SMOOTH);
+  camState.fov += (fov - camState.fov) * Math.min(1, dt * 8);
+  camera.fov = camState.fov;
+  camera.updateProjectionMatrix();
+
+  const recoilPitch = player.recoil * 0.035;
+  camera.position.set(camState.x, camState.y + recoilPitch * 0.25, camState.z);
+
+  const lookDist = 14;
+  const lookY = CAM_LOOK + (player.stance==='crouch'?-0.35:player.stance==='prone'?-0.7:0) - recoilPitch;
+  const lx = player.x + sinY * cosP * lookDist;
+  const ly = lookY + Math.sin(pitch) * lookDist * 1.1;
+  const lz = player.z + cosY * cosP * lookDist;
+  camera.lookAt(lx, ly, lz);
+
+  const deg = ((yaw * 180/Math.PI)%360+360)%360;
+  compassInner.style.transform = `translateX(${130 - deg*1.7}px)`;
+}
+
+/* ─── MOVEMENT (FIXED: joystick UP = forward) ─── */
+function approach(c,t,d) { return c<t ? Math.min(c+d,t) : c>t ? Math.max(c-d,t) : c; }
+function lerp(a,b,t) { return a+(b-a)*t; }
+
+function getMoveInput() {
+  const kb = kbVec();
+  let jx = input.dx, jz = -input.dy; // up on stick = forward
+  if (kb.dx || kb.dy) { jx = kb.dx; jz = -kb.dy; }
+  return { jx, jz, mag: Math.hypot(jx, jz), sprint: input.sprint || kb.sprint, fire: input.fire || kb.fire, aim: input.aim || kb.aim };
+}
+
+function updateMovement(dt) {
+  const inp = getMoveInput();
+  player.moving = inp.mag > 0.08;
+  player.sprinting = player.moving && inp.sprint && player.stance === 'stand';
+  player.aiming = inp.aim;
+  aimBtn.classList.toggle('active', player.aiming);
+  crosshairWrap.classList.toggle('aiming', player.aiming);
+
+  const baseSpd = player.stance==='prone' ? PRONE_SPEED : player.stance==='crouch' ? CROUCH_SPEED : (player.sprinting ? RUN_SPEED : WALK_SPEED);
+  const maxSpd = player.aiming ? baseSpd * 0.55 : baseSpd;
+
+  const yaw = getCamYaw();
+  const sin = Math.sin(yaw), cos = Math.cos(yaw);
+
+  let worldX = 0, worldZ = 0;
+  if (player.moving) {
+    // camera-relative movement (Free Fire: move relative to where you look)
+    worldX = -inp.jx * cos + inp.jz * sin;
+    worldZ = inp.jx * sin + inp.jz * cos;
+    const m = Math.hypot(worldX, worldZ);
+    if (m > 0) { worldX /= m; worldZ /= m; }
+  }
+
+  const tgtVx = worldX * maxSpd * Math.min(inp.mag, 1);
+  const tgtVz = worldZ * maxSpd * Math.min(inp.mag, 1);
+
+  if (player.moving) {
+    player.vx = approach(player.vx, tgtVx, ACCEL*dt);
+    player.vz = approach(player.vz, tgtVz, ACCEL*dt);
+  } else {
+    player.vx = approach(player.vx, 0, FRICTION*dt);
+    player.vz = approach(player.vz, 0, FRICTION*dt);
+  }
+
+  player.x += player.vx * dt;
+  player.z += player.vz * dt;
+  player.x = Math.max(-halfMap, Math.min(halfMap, player.x));
+  player.z = Math.max(-halfMap, Math.min(halfMap, player.z));
+
+  // jump / gravity
+  if (!player.grounded) {
+    player.vy -= GRAVITY * dt;
+    player.y += player.vy * dt;
+    if (player.y <= 0) { player.y = 0; player.vy = 0; player.grounded = true; }
+  }
+
+  player.speed = Math.hypot(player.vx, player.vz);
+
+  // character faces crosshair when aiming, else movement or camera
+  let targetYaw;
+  if (player.aiming) {
+    targetYaw = camState.yaw;
+  } else if (player.moving && player.speed > 0.4) {
+    targetYaw = Math.atan2(player.vx, player.vz);
+  } else {
+    targetYaw = camState.yaw;
+  }
+  let diff = targetYaw - player.yaw;
+  while (diff > Math.PI) diff -= Math.PI*2;
+  while (diff < -Math.PI) diff += Math.PI*2;
+  player.yaw += diff * Math.min(1, dt * TURN_SPEED);
+
+  player.recoil = approach(player.recoil, 0, dt * 12);
+
+  debugTag.textContent = crosshairTarget ? 'AIM LOCK 🔴' : 'aim at enemy to shoot';
+}
+
+/* ─── CROSSHAIR AIM — red when on enemy, damage only on target ─── */
+function getAimRay() {
+  raycaster.setFromCamera(screenCenter, camera);
+  return raycaster.ray;
+}
+
+function rayHitSphere(ray, cx, cy, cz, radius, maxDist) {
+  const ox = ray.origin.x, oy = ray.origin.y, oz = ray.origin.z;
+  const dx = ray.direction.x, dy = ray.direction.y, dz = ray.direction.z;
+  const lx = cx-ox, ly = cy-oy, lz = cz-oz;
+  const t = lx*dx + ly*dy + lz*dz;
+  if (t < 0 || t > maxDist) return null;
+  const px = ox+dx*t, py = oy+dy*t, pz = oz+dz*t;
+  const d = Math.hypot(px-cx, py-cy, pz-cz);
+  return d <= radius ? t : null;
+}
+
+function findCrosshairTarget() {
+  const ray = getAimRay();
+  const maxD = 150;
+  let best = null, bestT = maxD;
+
+  bots.forEach(bot => {
+    if (!bot.alive) return;
+    const t = rayHitSphere(ray, bot.x, 1.15, bot.z, bot.hitRadius, maxD);
+    if (t !== null && t < bestT) { bestT = t; best = { type:'bot', bot, dist:t }; }
   });
-  if(lines.length&&/^answer[:\-\s]/i.test(lines[0]))lines.shift();
-  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
-}
 
-async function ensureComplete(ans,prompt,expected){
-  let out=ans||'';const min=Math.max(80,Math.floor(expected*.6));let tries=0;
-  while(tries<2){
-    if(out.split(/\s+/).filter(Boolean).length>=min&&!/\.\.\.$|\-\s*$|\:\s*$/.test(out.trim()))break;
-    try{const extra=await callApi(`Continue and finish:\n${out}\n\nContinue in same style.`,1000);const c=sanitize(extra);if(!c)break;out=out.trim()+'\n'+c.trim();}catch(e){break;}
-    tries++;
-  }return out;
-}
-
-async function callApi(prompt,maxTokens=1500){
-  const res=await fetch('https://api.sarvam.ai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','api-subscription-key':SARVAM_KEY},
-    body:JSON.stringify({model:'sarvam-m',messages:[{role:'user',content:prompt}],max_tokens:maxTokens})
+  targets.forEach(t => {
+    if (!t.userData.hp) return;
+    const tHit = rayHitSphere(ray, t.position.x, t.position.y, t.position.z, 0.8, maxD);
+    if (tHit !== null && tHit < bestT) { bestT = tHit; best = { type:'crate', obj:t, dist:tHit }; }
   });
-  if(!res.ok){const e=await res.text();throw new Error(`API ${res.status}: ${e}`);}
-  const d=await res.json();return d.choices?.[0]?.message?.content||'';
+
+  return best;
 }
 
-async function downloadPDF(){
-  if(!generatedContent.length)return showToast('Generate first!','error');
-  const btn=document.getElementById('dlBtn');
-  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader spin"></i>';
-  try{
-    const {PDFDocument,rgb,StandardFonts}=PDFLib;
-    const doc=await PDFDocument.create();
-    const font=await doc.embedFont(StandardFonts.TimesRoman);
-    const bold=await doc.embedFont(StandardFonts.TimesRomanBold);
-    const W=595,H=842,m=50,maxW=W-m*2;
-    function wrap(t,f,size,mw){const words=t.split(' ');const lines=[];let line='';for(const w of words){const tt=line?line+' '+w:w;if(f.widthOfTextAtSize(tt,size)>mw){if(line)lines.push(line);line=w;}else line=tt;}if(line)lines.push(line);return lines;}
-    let page=doc.addPage([W,H]);let y=H-m;
-    function chk(n=20){if(y<m+n){page=doc.addPage([W,H]);y=H-m;}}
-    function drawTxt(t,f,size,col=rgb(0,0,0),x=m){chk(size+4);page.drawText(t,{x,y,font:f,size,color:col});y-=size+5;}
-    function drawWrap(t,f,size,col=rgb(0,0,0),ind=0,lh=null){const h=lh||(size+6);for(const l of wrap(t,f,size,maxW-ind)){chk(h);page.drawText(l,{x:m+ind,y,font:f,size,color:col});y-=h;}}
-    const uni=v('uniName'),name=v('studentName'),roll=v('rollNum'),program=v('program'),
-          sem=v('semester'),subject=v('subject'),session=v('session');
-    const uw=bold.widthOfTextAtSize(uni,16);
-    page.drawText(uni,{x:(W-uw)/2,y,font:bold,size:16,color:rgb(0,0,0)});y-=22;
-    const sw=bold.widthOfTextAtSize(subject+' — Assignment',13);
-    page.drawText(subject+' — Assignment',{x:(W-sw)/2,y,font:bold,size:13,color:rgb(0,0,0)});y-=20;
-    const rows=[['NAME',name],['ROLL',roll],['PROGRAM',program],['SEMESTER',sem],['COURSE',subject],['SESSION',session]];
-    const tx=m,tw=maxW,mid=tx+Math.round(tw*.38),rh=20,top=y;
-    page.drawLine({start:{x:tx,y:top},end:{x:tx+tw,y:top},thickness:1,color:rgb(0,0,0)});
-    for(let r=0;r<rows.length;r++){
-      const cy=top-(r+1)*rh+6;
-      page.drawText(rows[r][0],{x:tx+8,y:cy,font:bold,size:10,color:rgb(0,0,0)});
-      page.drawText(rows[r][1]||'',{x:mid+8,y:cy,font:font,size:10,color:rgb(0,0,0)});
-      page.drawLine({start:{x:tx,y:top-(r+1)*rh},end:{x:tx+tw,y:top-(r+1)*rh},thickness:.5,color:rgb(.8,.8,.8)});
-      page.drawLine({start:{x:mid,y:top},end:{x:mid,y:top-rows.length*rh},thickness:.5,color:rgb(.8,.8,.8)});
+function updateCrosshair() {
+  crosshairTarget = findCrosshairTarget();
+  crosshairWrap.classList.toggle('onTarget', !!crosshairTarget);
+}
+
+function updateHpUI() {
+  hpFillBar.style.width = Math.max(0, player.hp) + '%';
+}
+function getAimDirection() {
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  dir.y += (Math.random()-0.5) * GUNS[player.gun].spread * (player.aiming ? 0.4 : 1);
+  dir.x += (Math.random()-0.5) * GUNS[player.gun].spread * (player.aiming ? 0.4 : 1);
+  dir.normalize();
+  return dir;
+}
+
+function spawnMuzzleFlash() {
+  const dir = getAimDirection();
+  const flash = new THREE.PointLight(0xffaa44, 3.5, 5);
+  flash.position.set(
+    player.x + dir.x * 0.65,
+    1.15 + player.y + dir.y * 0.2,
+    player.z + dir.z * 0.65
+  );
+  scene.add(flash);
+  particles.push({ type:'flash', obj:flash, life:0.06 });
+}
+
+function spawnBullet(dir, isEnemy, fromX, fromY, fromZ, dmg, speed) {
+  const b = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 6, 6),
+    new THREE.MeshBasicMaterial({ color: isEnemy ? 0xff4444 : 0xffdd44 })
+  );
+  const origin = new THREE.Vector3(fromX, fromY, fromZ);
+  const off = dir.clone().multiplyScalar(0.55);
+  b.position.copy(origin).add(off);
+  scene.add(b);
+  const bullet = { mesh:b, vx:dir.x*speed, vy:dir.y*speed, vz:dir.z*speed, life:2.5, dmg, isEnemy };
+  if (isEnemy) enemyBullets.push(bullet);
+  else bullets.push(bullet);
+}
+
+function applyCrosshairDamage() {
+  if (!crosshairTarget) return false;
+  if (crosshairTarget.type === 'bot') {
+    damageBot(crosshairTarget.bot, GUNS[player.gun].dmg);
+    return true;
+  }
+  if (crosshairTarget.type === 'crate') {
+    const t = crosshairTarget.obj;
+    t.userData.hp -= GUNS[player.gun].dmg;
+    spawnHitFX(t.position.x, t.position.y+0.5, t.position.z);
+    if (t.userData.hp <= 0) { scene.remove(t); t.userData.hp=0; player.kills++; killTag.textContent='💀 '+player.kills; }
+    return true;
+  }
+  return false;
+}
+
+function damageBot(bot, dmg) {
+  if (!bot.alive) return;
+  bot.hp -= dmg;
+  spawnHitFX(bot.x, 1.2, bot.z);
+  if (bot.hp <= 0) {
+    bot.alive = false;
+    scene.remove(bot.mesh);
+    player.kills++;
+    killTag.textContent = '💀 ' + player.kills;
+    document.getElementById('playerCount').textContent = bots.filter(b=>b.alive).length + 1;
+  }
+}
+
+function checkBulletHits(b) {
+  // player bullets = visual only, damage handled by crosshair on fire
+  return false;
+}
+
+function checkEnemyBulletHits(b) {
+  const dx = player.x-b.mesh.position.x, dy = (1.1+player.y)-b.mesh.position.y, dz = player.z-b.mesh.position.z;
+  if (Math.hypot(dx,dy,dz) < 0.9) {
+    player.hp -= b.dmg;
+    updateHpUI();
+    spawnHitFX(player.x, 1.2+player.y, player.z);
+    if (player.hp <= 0) {
+      lobbyMsg.textContent = 'YOU ELIMINATED — refresh to replay';
+      player.hp = 0;
     }
-    y=top-rows.length*rh-30;
-    for(let i=0;i<generatedContent.length;i++){
-      const item=generatedContent[i];chk(40);
-      drawTxt(`Question ${i+1}`,bold,13);y-=2;
-      drawWrap(item.q.replace(/^Q\.\d+\s*/,''),font,11,rgb(0,0,0));y-=6;
-      for(const para of item.a.split('\n').filter(p=>p.trim())){
-        if(para.indexOf('%%H_START%%')!==-1){const inner=para.replace(/.*?%%H_START%%(.*?)%%H_END%%.*/,'$1').trim();if(inner){chk(20);drawTxt(inner,bold,12);}}
-        else{const c=para.replace(/\*\*/g,'').replace(/\*/g,'').trim();if(c)drawWrap(c,font,11,rgb(0,0,0),0,17);}
-        y-=2;
-      }y-=12;
+    return true;
+  }
+  return false;
+}
+
+function spawnBotBullet(bot) {
+  const dx = player.x-bot.x, dy = (1.1+player.y)-1.15, dz = player.z-bot.z;
+  const dist = Math.hypot(dx,dy,dz);
+  if (dist < 0.5) return;
+  const dir = new THREE.Vector3(dx/dist, dy/dist, dz/dist);
+  dir.x += (Math.random()-0.5)*0.08;
+  dir.y += (Math.random()-0.5)*0.05;
+  dir.z += (Math.random()-0.5)*0.08;
+  dir.normalize();
+  spawnBullet(dir, true, bot.x, 1.15, bot.z, 8, 42);
+  playGunSound('SMG');
+  bot.char.limbs.rightArm.shoulder.rotation.x = -0.5;
+  setTimeout(() => { if (bot.alive) bot.char.limbs.rightArm.shoulder.rotation.x = -0.35; }, 120);
+}
+
+function spawnHitFX(x,y,z) {
+  for (let i=0; i<5; i++) {
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.05,4,4), new THREE.MeshBasicMaterial({ color:0xff6644 }));
+    p.position.set(x,y,z);
+    scene.add(p);
+    particles.push({ type:'spark', obj:p, life:0.3+Math.random()*0.2,
+      vx:(Math.random()-0.5)*4, vy:Math.random()*3, vz:(Math.random()-0.5)*4 });
+  }
+}
+
+function doMelee() {
+  const g = GUNS.Fist;
+  if (crosshairTarget?.type === 'bot') { damageBot(crosshairTarget.bot, g.dmg); return; }
+  if (crosshairTarget?.type === 'crate') {
+    const t = crosshairTarget.obj;
+    t.userData.hp -= g.dmg;
+    spawnHitFX(t.position.x, t.position.y, t.position.z);
+    if (t.userData.hp <= 0) { scene.remove(t); t.userData.hp=0; player.kills++; killTag.textContent='💀 '+player.kills; }
+    return;
+  }
+  const dir = getAimDirection();
+  const ox = player.x + dir.x*1.2, oz = player.z + dir.z*1.2;
+  bots.forEach(bot => {
+    if (!bot.alive) return;
+    if (Math.hypot(bot.x-ox, bot.z-oz) < 2.0) damageBot(bot, g.dmg);
+  });
+}
+
+function updateCombat(dt) {
+  const g = GUNS[player.gun];
+  const kb = kbVec();
+  const firing = input.fire || kb.fire;
+
+  if (player.fireCd > 0) player.fireCd -= dt;
+
+  if (firing && player.fireCd <= 0 && player.hp > 0) {
+    if (g.melee) {
+      doMelee();
+      player.fireCd = g.rate;
+      character.limbs.rightArm.shoulder.rotation.x = -0.8;
+      setTimeout(() => { character.limbs.rightArm.shoulder.rotation.x = 0; }, 150);
+    } else if (player.mag > 0) {
+      const dir = getAimDirection();
+      spawnBullet(dir, false, player.x, 1.15+player.y, player.z, g.dmg, g.speed);
+      applyCrosshairDamage(); // only hits if crosshair on enemy (red)
+      spawnMuzzleFlash();
+      playGunSound(player.gun);
+      player.mag--;
+      player.fireCd = g.rate;
+      player.recoil = Math.min(player.recoil + 1, 8);
+      updateAmmoUI();
+      // gun recoil anim
+      character.limbs.rightArm.shoulder.rotation.x = -0.3 - player.recoil*0.05;
+    } else if (player.reserve > 0) {
+      const reload = Math.min(g.mag, player.reserve);
+      player.mag = reload;
+      player.reserve -= reload;
+      player.fireCd = 1.2;
+      updateAmmoUI();
     }
-    const bytes=await doc.save();
-    const blob=new Blob([bytes],{type:'application/pdf'});
+  }
 
-    // Try direct download first (works in normal browsers)
-    const tryDirectDownload = () => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Assignment_${name.replace(/\s+/g,'_')}.pdf`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('PDF download started','success');
-    };
+  // player bullet visuals
+  for (let i = bullets.length-1; i >= 0; i--) {
+    const b = bullets[i];
+    b.life -= dt;
+    b.mesh.position.x += b.vx*dt;
+    b.mesh.position.y += b.vy*dt;
+    b.mesh.position.z += b.vz*dt;
+    b.vy -= 9.8*dt;
+    if (b.life <= 0 || b.mesh.position.y < 0) {
+      scene.remove(b.mesh);
+      bullets.splice(i, 1);
+    }
+  }
 
-    // Upload to a temporary HTTPS host (transfer.sh) when running inside WebView
-    async function uploadToTransfer(blob, filename){
-      const uploadUrl = 'https://transfer.sh/' + encodeURIComponent(filename);
-      const resp = await fetch(uploadUrl, {method: 'PUT', body: blob});
-      if(!resp.ok) throw new Error('Upload failed: ' + resp.status);
-      const text = await resp.text();
-      return text.trim();
+  // enemy bullets hurt player
+  for (let i = enemyBullets.length-1; i >= 0; i--) {
+    const b = enemyBullets[i];
+    b.life -= dt;
+    b.mesh.position.x += b.vx*dt;
+    b.mesh.position.y += b.vy*dt;
+    b.mesh.position.z += b.vz*dt;
+    b.vy -= 9.8*dt;
+    const hit = checkEnemyBulletHits(b);
+    if (hit || b.life <= 0 || b.mesh.position.y < 0) {
+      scene.remove(b.mesh);
+      enemyBullets.splice(i, 1);
+    }
+  }
+
+  // particles
+  for (let i = particles.length-1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt;
+    if (p.type === 'spark') {
+      p.obj.position.x += p.vx*dt;
+      p.obj.position.y += p.vy*dt;
+      p.obj.position.z += p.vz*dt;
+      p.vy -= 12*dt;
+    }
+    if (p.life <= 0) { scene.remove(p.obj); particles.splice(i,1); }
+  }
+}
+
+/* ─── ANIMATION ─── */
+function updateAnim(dt) {
+  const { leftLeg, rightLeg, leftArm, rightArm } = character.limbs;
+  const bp = character.bodyPivot;
+  const tgt = player.moving && player.speed > 0.3 ? 1 : 0;
+  player.animBlend = lerp(player.animBlend, tgt, Math.min(1, dt*10));
+
+  if (player.moving && player.speed > 0.3) {
+    const rate = player.sprinting ? 9.5 : 5.5;
+    character.animPhase += dt * rate * (player.speed / (player.sprinting?RUN_SPEED:WALK_SPEED));
+  }
+
+  const ph = character.animPhase;
+  const sw = Math.sin(ph*Math.PI*2), sw2 = Math.sin(ph*Math.PI*2+Math.PI);
+  const lift = Math.max(0, Math.sin(ph*Math.PI*2));
+  const lift2 = Math.max(0, Math.sin(ph*Math.PI*2+Math.PI));
+  const hip = player.sprinting ? 0.7 : 0.45;
+  const knee = player.sprinting ? 0.9 : 0.6;
+  const bob = player.animBlend * Math.abs(Math.sin(ph*Math.PI*2)) * (player.sprinting?0.09:0.05);
+
+  let stanceOff = 0, scaleY = 1;
+  if (player.stance === 'crouch') { stanceOff = -0.35; scaleY = 0.82; }
+  if (player.stance === 'prone') { stanceOff = -0.65; scaleY = 0.55; }
+
+  leftLeg.hip.rotation.x = lerp(0, sw*hip, player.animBlend);
+  rightLeg.hip.rotation.x = lerp(0, sw2*hip, player.animBlend);
+  leftLeg.knee.rotation.x = lerp(0, Math.max(0,-sw)*knee, player.animBlend);
+  rightLeg.knee.rotation.x = lerp(0, Math.max(0,-sw2)*knee, player.animBlend);
+  leftLeg.footPivot.rotation.x = lerp(0, lift*0.35, player.animBlend);
+  rightLeg.footPivot.rotation.x = lerp(0, lift2*0.35, player.animBlend);
+
+  const armSw = player.sprinting ? 0.55 : 0.38;
+  leftArm.shoulder.rotation.x = lerp(0, sw2*armSw, player.animBlend);
+  if (player.gun !== 'Fist' && !input.fire) {
+    rightArm.shoulder.rotation.x = lerp(0, -0.4, 1); // hold gun pose
+    rightArm.shoulder.rotation.z = lerp(0, -0.15, 1);
+  } else if (!input.fire) {
+    rightArm.shoulder.rotation.x = lerp(0, sw*armSw, player.animBlend);
+  }
+
+  bp.position.y = 0.95 + bob + stanceOff + player.y;
+  bp.scale.y = scaleY;
+
+  character.root.rotation.y = player.yaw;
+  character.root.position.set(player.x, 0, player.z);
+}
+
+/* ─── BOT AI — wander, chase, SHOOT back ─── */
+function updateBots(dt) {
+  if (player.hp <= 0) return;
+  bots.forEach(bot => {
+    if (!bot.alive) return;
+    bot.timer -= dt;
+    bot.fireCd -= dt;
+    if (bot.timer <= 0) {
+      bot.timer = 2 + Math.random() * 4;
+      bot.wanderA = Math.random() * Math.PI * 2;
+      bot.state = Math.random() < 0.25 ? 'idle' : 'wander';
     }
 
-    // Convert Blob to base64 (for native bridge in WebView apps like Kodular)
-    function blobToBase64(blob){
-      return new Promise((res, rej)=>{
-        const fr = new FileReader();
-        fr.onload = ()=>{
-          const dataUrl = fr.result || '';
-          // data:[<mediatype>][;base64],<data>
-          const idx = dataUrl.indexOf(',');
-          res(idx>=0?dataUrl.slice(idx+1):dataUrl);
-        };
-        fr.onerror = ()=>rej(new Error('FileReader error'));
-        fr.readAsDataURL(blob);
-      });
-    }
+    const dx = player.x - bot.x, dz = player.z - bot.z;
+    const dist = Math.hypot(dx, dz);
+    bot.yaw = Math.atan2(dx, dz);
 
-    const ua = navigator.userAgent || '';
-    const isLikelyWebView = (/wv|Android.*WebView|Version\/.*Chrome\/.*Mobile/i.test(ua)) || !!window.ReactNativeWebView || !!window.Android;
-
-    try{
-      if(isLikelyWebView){
-        const filename = `Assignment_${name.replace(/\s+/g,'_')}.pdf`;
-        // Preferred: call native Android bridge if the app exposes a save method (Kodular or custom WebView)
-        try{
-          if(window.Android && typeof window.Android.saveBase64 === 'function'){
-            const b64 = await blobToBase64(blob);
-            // saveBase64 should be implemented in the app to accept (filename, base64data)
-            window.Android.saveBase64(filename, b64);
-            showToast('Sent file to app for saving','success');
-          } else if(window.Android && typeof window.Android.saveBase64 === 'object' && window.Android.saveBase64.call){
-            // Some bridges expose methods differently; try calling anyway
-            const b64 = await blobToBase64(blob);
-            window.Android.saveBase64(filename, b64);
-            showToast('Sent file to app for saving','success');
-          } else if(window.ReactNativeWebView && window.ReactNativeWebView.postMessage){
-            // For React Native WebView, send base64 payload via postMessage
-            const b64 = await blobToBase64(blob);
-            window.ReactNativeWebView.postMessage(JSON.stringify({action:'saveBase64',filename,base64:b64}));
-            showToast('Sent file to native bridge','success');
-          } else if(window.AppInventor && typeof window.AppInventor.setWebViewString === 'function'){
-            // Kodular / App Inventor bridge: send JSON via WebViewString
-            const b64 = await blobToBase64(blob);
-            try{
-              window.AppInventor.setWebViewString(JSON.stringify({action:'saveBase64',filename,base64:b64}));
-              showToast('Sent file to app via WebViewString','success');
-            }catch(e){
-              // ignore and fallback
-            }
-          } else {
-            // Fallback: upload and open HTTPS link so native downloader can handle it
-            const publicUrl = await uploadToTransfer(blob, filename);
-            if(publicUrl && publicUrl.startsWith('http')){
-              window.open(publicUrl, '_blank');
-              showToast('Opened secure download link','success');
-            } else {
-              tryDirectDownload();
-            }
-          }
-        }catch(e){
-          // if anything fails, fallback to upload or direct download
-          try{
-            const publicUrl = await uploadToTransfer(blob, filename);
-            if(publicUrl && publicUrl.startsWith('http')){ window.open(publicUrl, '_blank'); showToast('Opened secure download link','success'); }
-            else tryDirectDownload();
-          }catch(err){ tryDirectDownload(); console.error('WebView save fallback error',err); }
-        }
-      } else {
-        tryDirectDownload();
+    if (dist < 38 && dist > 4) {
+      bot.state = 'combat';
+      bot.vx = Math.sin(bot.yaw) * bot.speed * 0.55;
+      bot.vz = Math.cos(bot.yaw) * bot.speed * 0.55;
+      // fire at player
+      if (bot.fireCd <= 0) {
+        bot.fireCd = 0.28 + Math.random() * 0.45;
+        spawnBotBullet(bot);
       }
-    }catch(e){
-      // final fallback: direct blob download
-      tryDirectDownload();
-      console.error('PDF download/upload error:', e);
-      showToast('PDF download fallback: '+e.message,'error');
+      bot.char.limbs.rightArm.shoulder.rotation.x = -0.35;
+      bot.char.limbs.rightArm.shoulder.rotation.z = -0.12;
+    } else if (dist <= 4) {
+      bot.vx = -Math.sin(bot.yaw) * bot.speed * 0.3;
+      bot.vz = -Math.cos(bot.yaw) * bot.speed * 0.3;
+    } else if (bot.state === 'wander') {
+      bot.vx = Math.sin(bot.wanderA) * bot.speed * 0.4;
+      bot.vz = Math.cos(bot.wanderA) * bot.speed * 0.4;
+      if (Math.hypot(bot.vx,bot.vz) > 0.2) bot.yaw = Math.atan2(bot.vx, bot.vz);
+    } else {
+      bot.vx *= 0.9; bot.vz *= 0.9;
     }
-  }catch(e){showToast('PDF error: '+e.message,'error');console.error(e);}
-  btn.disabled=false;btn.innerHTML='<i class="ti ti-file-download"></i> PDF';
+
+    bot.x += bot.vx * dt;
+    bot.z += bot.vz * dt;
+    bot.x = Math.max(-halfMap+2, Math.min(halfMap-2, bot.x));
+    bot.z = Math.max(-halfMap+2, Math.min(halfMap-2, bot.z));
+
+    bot.mesh.position.set(bot.x, 0, bot.z);
+    bot.mesh.rotation.y = bot.yaw;
+
+    const ph = performance.now() * 0.003 + bot.x;
+    const runBob = Math.hypot(bot.vx,bot.vz) > 0.5 ? Math.abs(Math.sin(ph*2))*0.06 : 0;
+    bot.char.bodyPivot.position.y = 0.95 + runBob;
+  });
 }
 
-function copyText(){
-  if(!generatedContent.length)return;
-  navigator.clipboard.writeText(generatedContent.map(item=>`${item.q}\n\n${item.a}`).join('\n\n---\n\n'))
-    .then(()=>showToast('Copied!','success'));
+/* ─── LOOP ─── */
+let lastT = performance.now();
+switchGun('AK47');
+
+function onResize() {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 }
+window.addEventListener('resize', onResize);
 
-function showToast(msg,type='success'){
-  const t=document.getElementById('toast');
-  t.querySelector('i').className=type==='success'?'ti ti-check':'ti ti-alert-circle';
-  document.getElementById('toastMsg').textContent=msg;
-  t.className=`toast ${type} show`;
-  setTimeout(()=>t.classList.remove('show'),2800);
+function loop(now) {
+  const dt = Math.min((now-lastT)/1000, 0.05);
+  lastT = now;
+  updateMovement(dt);
+  updateCrosshair();
+  updateBots(dt);
+  updateCombat(dt);
+  updateCamera(dt);
+  updateAnim(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
 }
-
-function escapeHtml(str){if(!str)return'';return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-
-renderQuestions();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
